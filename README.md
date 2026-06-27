@@ -1,16 +1,54 @@
-# React + Vite
+# Chamila & Dilmi Wedding Invitation
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React/Vite frontend with a Node backend for RSVP submissions and an admin panel.
 
-Currently, two official plugins are available:
+## Project Paths
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `frontend/` - invitation website and admin panel
+- `backend/` - RSVP API and Google Sheets storage
 
-## React Compiler
+## Run Locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the Oxlint configuration
+- Website: `http://127.0.0.1:5173/`
+- Admin panel: `http://127.0.0.1:5173/admin`
+- API: `http://127.0.0.1:5174/`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Google Sheets Setup
+
+1. Create a Google Sheet with a tab named `RSVPs`.
+2. Add this header row in row 1:
+
+```text
+Created At | Name | Phone | Guests | Attending | Message
+```
+
+3. In Google Cloud, create a service account and enable the Google Sheets API.
+4. Create a JSON key for the service account.
+5. Share the Google Sheet with the service account email as an Editor.
+6. Copy `.env.example` to `.env` and fill these values:
+
+```bash
+ADMIN_PASSCODE=chamila-dilmi
+GOOGLE_SHEET_ID=your-google-sheet-id
+GOOGLE_SHEET_NAME=RSVPs
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n"
+```
+
+The `GOOGLE_SHEET_ID` is the long ID in the Google Sheet URL.
+
+## Scripts
+
+```bash
+npm run dev      # frontend + backend
+npm run dev:frontend # frontend only
+npm run api      # backend
+npm run build    # production frontend build
+npm run start    # backend serving dist
+npm run lint     # lint checks
+```

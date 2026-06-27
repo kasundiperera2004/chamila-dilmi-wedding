@@ -32,7 +32,7 @@ function Countdown() {
     <section className="section countdown-section" id="countdown">
       <div className="section-inner centered">
         <p className="eyebrow">Counting Down</p>
-        <h2>Until the celebration begins</h2>
+        <h2>Until our wedding day</h2>
         <div className="countdown-grid" aria-label="Countdown to wedding day">
           {Object.entries(timeLeft).map(([label, value]) => (
             <div className="countdown-item" key={label}>

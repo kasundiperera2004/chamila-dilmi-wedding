@@ -8,6 +8,10 @@ export const weddingData = {
     name: 'Hotel Shans',
     location: 'Galigamuwa',
     address: 'Hotel Shans, Galigamuwa',
+    mapUrl:
+      'https://www.google.com/maps?q=Hotel%20Shans%2C%20Galigamuwa&output=embed',
+    directionsUrl:
+      'https://www.google.com/maps/search/?api=1&query=Hotel%20Shans%2C%20Galigamuwa',
   },
   schedule: [
     {
@@ -31,18 +35,4 @@ export const weddingData = {
     phone: '078 298 4305',
     phoneHref: 'tel:+94782984305',
   },
-  gallery: [
-    {
-      title: 'A Day to Remember',
-      image: '/images/gallery-1.jpg',
-    },
-    {
-      title: 'With Love',
-      image: '/images/gallery-2.jpg',
-    },
-    {
-      title: 'Forever Begins',
-      image: '/images/gallery-3.jpg',
-    },
-  ],
 }

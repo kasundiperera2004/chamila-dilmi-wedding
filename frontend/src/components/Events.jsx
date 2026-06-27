@@ -3,8 +3,8 @@ import { weddingData } from '../data/weddingData'
 function Events() {
   return (
     <section className="section events-section" id="venue">
-      <div className="section-inner two-column">
-        <div>
+      <div className="section-inner">
+        <div className="section-heading centered">
           <p className="eyebrow">Venue</p>
           <h2>{weddingData.venue.name}</h2>
           <p className="lead">{weddingData.venue.location}</p>
@@ -12,6 +12,14 @@ function Events() {
             Join Chamila and Dilmi for a joyful wedding celebration surrounded by
             family, friends, blessings, and love.
           </p>
+          <a
+            className="map-link"
+            href={weddingData.venue.directionsUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Open Google Maps
+          </a>
         </div>
         <div className="schedule-panel" id="schedule">
           <p className="eyebrow">Wedding Day Schedule</p>
@@ -24,6 +32,15 @@ function Events() {
               </div>
             </article>
           ))}
+        </div>
+        <div className="map-panel" aria-label="Google Map location for Hotel Shans, Galigamuwa">
+          <iframe
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={weddingData.venue.mapUrl}
+            title="Hotel Shans, Galigamuwa map"
+          />
         </div>
       </div>
     </section>

@@ -1,21 +1,36 @@
 import { createServer } from 'node:http'
-import { appendFile, mkdir, readFile, stat } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { readFile, stat } from 'node:fs/promises'
+import { createSign } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
+const envPath = path.join(rootDir, '.env')
+
+if (existsSync(envPath) && process.loadEnvFile) {
+  process.loadEnvFile(envPath)
+}
+
 const distDir = path.join(rootDir, 'dist')
-const dataDir = path.join(rootDir, 'backend', 'data')
-const rsvpFile = path.join(dataDir, 'rsvps.jsonl')
 const port = Number(process.env.PORT || 5174)
+const host = process.env.HOST || '127.0.0.1'
+const adminPasscode = process.env.ADMIN_PASSCODE || 'chamila-dilmi'
+const googleSheetId = process.env.GOOGLE_SHEET_ID
+const googleSheetName = process.env.GOOGLE_SHEET_NAME || 'RSVPs'
+const googleClientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+const googleScope = 'https://www.googleapis.com/auth/spreadsheets'
+let cachedGoogleToken = null
+let sheetReady = false
 
 const sendJson = (response, statusCode, data) => {
   response.writeHead(statusCode, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, x-admin-passcode',
   })
   response.end(JSON.stringify(data))
 }
@@ -42,33 +57,265 @@ const parseBody = (request) =>
     })
   })
 
-const handleRsvp = async (request, response) => {
-  const body = await parseBody(request)
-  const name = String(body.name || '').trim()
+const base64Url = (value) =>
+  Buffer.from(value)
+    .toString('base64')
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+
+const assertGoogleConfig = () => {
+  const missing = [
+    ['GOOGLE_SHEET_ID', googleSheetId],
+    ['GOOGLE_SERVICE_ACCOUNT_EMAIL', googleClientEmail],
+    ['GOOGLE_PRIVATE_KEY', googlePrivateKey],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key)
+
+  if (missing.length > 0) {
+    throw new Error(`Missing Google Sheets environment variables: ${missing.join(', ')}`)
+  }
+}
+
+const getGoogleAccessToken = async () => {
+  assertGoogleConfig()
+
+  if (cachedGoogleToken && cachedGoogleToken.expiresAt > Date.now() + 60_000) {
+    return cachedGoogleToken.accessToken
+  }
+
+  const now = Math.floor(Date.now() / 1000)
+  const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
+  const payload = base64Url(
+    JSON.stringify({
+      iss: googleClientEmail,
+      scope: googleScope,
+      aud: 'https://oauth2.googleapis.com/token',
+      exp: now + 3600,
+      iat: now,
+    }),
+  )
+  const unsignedJwt = `${header}.${payload}`
+  const signature = createSign('RSA-SHA256').update(unsignedJwt).sign(googlePrivateKey, 'base64url')
+  const assertion = `${unsignedJwt}.${signature}`
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion,
+    }),
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error_description || result.error || 'Unable to authorize Google Sheets.')
+  }
+
+  cachedGoogleToken = {
+    accessToken: result.access_token,
+    expiresAt: Date.now() + Number(result.expires_in || 3600) * 1000,
+  }
+
+  return cachedGoogleToken.accessToken
+}
+
+const sheetRange = (range) => encodeURIComponent(`'${googleSheetName}'!${range}`)
+
+const googleRequest = async (url, options = {}) => {
+  const accessToken = await getGoogleAccessToken()
+
+  const response = await fetch(url, {
+    method: options.method || 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    throw new Error(result.error?.message || 'Google Sheets request failed.')
+  }
+
+  return result
+}
+
+const sheetsRequest = async (range, options = {}) => {
+  const url = new URL(
+    `https://sheets.googleapis.com/v4/spreadsheets/${googleSheetId}/values/${sheetRange(range)}${
+      options.action ? `:${options.action}` : ''
+    }`,
+  )
+
+  Object.entries(options.searchParams || {}).forEach(([key, value]) => {
+    url.searchParams.set(key, value)
+  })
+
+  return googleRequest(url, options)
+}
+
+const ensureSheetReady = async () => {
+  if (sheetReady) {
+    return
+  }
+
+  const spreadsheetUrl = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${googleSheetId}`)
+  spreadsheetUrl.searchParams.set('fields', 'sheets.properties.title')
+  const spreadsheet = await googleRequest(spreadsheetUrl)
+  const sheetExists = (spreadsheet.sheets || []).some(
+    (sheet) => sheet.properties?.title === googleSheetName,
+  )
+
+  if (!sheetExists) {
+    await googleRequest(
+      `https://sheets.googleapis.com/v4/spreadsheets/${googleSheetId}:batchUpdate`,
+      {
+        method: 'POST',
+        body: {
+          requests: [
+            {
+              addSheet: {
+                properties: {
+                  title: googleSheetName,
+                },
+              },
+            },
+          ],
+        },
+      },
+    )
+  }
+
+  await sheetsRequest('A1:F1', {
+    method: 'PUT',
+    searchParams: {
+      valueInputOption: 'USER_ENTERED',
+    },
+    body: {
+      values: [['Created At', 'Name', 'Phone', 'Guests', 'Attending', 'Message']],
+    },
+  })
+
+  sheetReady = true
+}
+
+const appendRsvpToSheet = async (rsvp) => {
+  await ensureSheetReady()
+
+  await sheetsRequest('A:F', {
+    method: 'POST',
+    action: 'append',
+    searchParams: {
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+    },
+    body: {
+      values: [[rsvp.createdAt, rsvp.name, rsvp.phone, rsvp.guests, rsvp.attending, rsvp.message]],
+    },
+  })
+}
+
+const readRsvpsFromSheet = async () => {
+  await ensureSheetReady()
+
+  const result = await sheetsRequest('A2:F')
+
+  return (result.values || [])
+    .map(([createdAt, name, phone, guests, attending, message]) => ({
+      createdAt,
+      name,
+      phone,
+      guests: Number(guests || 1),
+      attending,
+      message: message || '',
+    }))
+    .filter((rsvp) => rsvp.name && rsvp.phone)
+    .reverse()
+}
+
+const normalizeRsvp = (body) => {
+  const name = String(body.name || '').trim().replace(/\s+/g, ' ')
   const phone = String(body.phone || '').trim()
   const guests = Number(body.guests || 1)
   const attending = String(body.attending || '').trim()
   const message = String(body.message || '').trim()
+  const validAttendance = ['yes', 'no', 'maybe']
 
-  if (!name || !phone || !attending || guests < 1) {
-    sendJson(response, 400, { message: 'Please provide valid RSVP details.' })
-    return
+  if (name.length < 2 || name.length > 80) {
+    return { error: 'Please enter a valid full name.' }
   }
 
-  await mkdir(dataDir, { recursive: true })
-  await appendFile(
-    rsvpFile,
-    `${JSON.stringify({
+  if (!/^0\d{9}$/.test(phone.replace(/\s/g, ''))) {
+    return { error: 'Please enter a valid Sri Lankan phone number.' }
+  }
+
+  if (!Number.isInteger(guests) || guests < 1 || guests > 10) {
+    return { error: 'Guest count must be between 1 and 10.' }
+  }
+
+  if (!validAttendance.includes(attending)) {
+    return { error: 'Please select a valid attendance option.' }
+  }
+
+  if (message.length > 300) {
+    return { error: 'Message must be 300 characters or fewer.' }
+  }
+
+  return {
+    rsvp: {
       name,
       phone,
       guests,
       attending,
       message,
       createdAt: new Date().toISOString(),
-    })}\n`,
-  )
+    },
+  }
+}
+
+const handleRsvp = async (request, response) => {
+  const body = await parseBody(request)
+  const { rsvp, error } = normalizeRsvp(body)
+
+  if (error) {
+    sendJson(response, 400, { message: error })
+    return
+  }
+
+  await appendRsvpToSheet(rsvp)
 
   sendJson(response, 201, { message: 'RSVP received.' })
+}
+
+const readRsvps = async () => {
+  return readRsvpsFromSheet()
+}
+
+const handleAdminRsvps = async (request, response) => {
+  const passcode = request.headers['x-admin-passcode']
+
+  if (passcode !== adminPasscode) {
+    sendJson(response, 401, { message: 'Invalid admin passcode.' })
+    return
+  }
+
+  const rsvps = await readRsvps()
+  const totals = rsvps.reduce(
+    (summary, rsvp) => {
+      summary.guests += Number(rsvp.guests || 0)
+      summary[rsvp.attending] = (summary[rsvp.attending] || 0) + 1
+      return summary
+    },
+    { guests: 0, yes: 0, no: 0, maybe: 0 },
+  )
+
+  sendJson(response, 200, { rsvps, totals })
 }
 
 const contentTypes = {
@@ -112,18 +359,29 @@ const serveStatic = async (request, response) => {
 
 const server = createServer(async (request, response) => {
   try {
+    const requestUrl = new URL(request.url, `http://${request.headers.host}`)
+
     if (request.method === 'OPTIONS') {
       sendJson(response, 204, {})
       return
     }
 
-    if (request.url === '/api/health') {
-      sendJson(response, 200, { status: 'ok' })
+    if (requestUrl.pathname === '/api/health') {
+      sendJson(response, 200, {
+        status: 'ok',
+        storage: 'google-sheets',
+        sheetsConfigured: Boolean(googleSheetId && googleClientEmail && googlePrivateKey),
+      })
       return
     }
 
-    if (request.url === '/api/rsvp' && request.method === 'POST') {
+    if (requestUrl.pathname === '/api/rsvp' && request.method === 'POST') {
       await handleRsvp(request, response)
+      return
+    }
+
+    if (requestUrl.pathname === '/api/rsvps' && request.method === 'GET') {
+      await handleAdminRsvps(request, response)
       return
     }
 
@@ -133,6 +391,15 @@ const server = createServer(async (request, response) => {
   }
 })
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Wedding invitation API running at http://localhost:${port}`)
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use. Stop the existing API server or set PORT to another value.`)
+    process.exit(1)
+  }
+
+  throw error
+})
+
+server.listen(port, host, () => {
+  console.log(`Wedding invitation API running at http://${host}:${port}`)
 })

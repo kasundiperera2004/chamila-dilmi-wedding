@@ -4,12 +4,15 @@ function Footer() {
   return (
     <footer className="footer-section" id="contact">
       <div className="section-inner footer-inner">
-        <div>
-          <p className="eyebrow">Contact</p>
-          <h2>{weddingData.contact.name}</h2>
-          <a href={weddingData.contact.phoneHref}>{weddingData.contact.phone}</a>
-        </div>
-        <p>{weddingData.couple} | {weddingData.date}</p>
+        <p className="eyebrow">Thank You</p>
+        <h2>With love, Chamila & Dilmi</h2>
+        <p>
+          Your presence will make our wedding day more beautiful and memorable.
+          Thank you for sharing this special celebration with us.
+        </p>
+        <a className="contact-button" href={weddingData.contact.phoneHref}>
+          Contact {weddingData.contact.name}
+        </a>
       </div>
     </footer>
   )
