@@ -21,6 +21,15 @@ function Events() {
             Open Google Maps
           </a>
         </div>
+        <div className="map-panel" aria-label="Google Map location for Hotel Shans, Galigamuwa">
+          <iframe
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={weddingData.venue.mapUrl}
+            title="Hotel Shans, Galigamuwa map"
+          />
+        </div>
         <div className="schedule-panel" id="schedule">
           <p className="eyebrow">Wedding Day Schedule</p>
           {weddingData.schedule.map((event) => (
@@ -32,15 +41,6 @@ function Events() {
               </div>
             </article>
           ))}
-        </div>
-        <div className="map-panel" aria-label="Google Map location for Hotel Shans, Galigamuwa">
-          <iframe
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            src={weddingData.venue.mapUrl}
-            title="Hotel Shans, Galigamuwa map"
-          />
         </div>
       </div>
     </section>

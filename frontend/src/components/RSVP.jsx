@@ -12,7 +12,6 @@ const validateForm = (form) => {
   const errors = {}
   const name = form.name.trim().replace(/\s+/g, ' ')
   const phone = form.phone.trim()
-  const normalizedPhone = phone.replace(/\s/g, '')
   const guests = Number(form.guests)
 
   if (name.length < 2) {
@@ -21,15 +20,15 @@ const validateForm = (form) => {
     errors.name = 'Name must be 80 characters or fewer.'
   }
 
-  if (!/^0\d{9}$/.test(normalizedPhone)) {
-    errors.phone = 'Use a valid number like 0782984305.'
+  if (!/^0\d{9}$/.test(phone)) {
+    errors.phone = 'Enter exactly 10 numbers, like 0782984305.'
   }
 
   if (!Number.isInteger(guests) || guests < 1 || guests > 10) {
     errors.guests = 'Guest count must be between 1 and 10.'
   }
 
-  if (!['yes', 'no', 'maybe'].includes(form.attending)) {
+  if (!['yes', 'no'].includes(form.attending)) {
     errors.attending = 'Please select an attendance option.'
   }
 
@@ -47,8 +46,14 @@ function RSVP() {
 
   const handleChange = (event) => {
     const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
+    const nextValue = name === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value
+    setForm((current) => ({ ...current, [name]: nextValue }))
     setErrors((current) => ({ ...current, [name]: '' }))
+  }
+
+  const handleAttendanceChange = (attending) => {
+    setForm((current) => ({ ...current, attending }))
+    setErrors((current) => ({ ...current, attending: '' }))
   }
 
   const handleSubmit = async (event) => {
@@ -73,7 +78,7 @@ function RSVP() {
         body: JSON.stringify({
           ...form,
           name: form.name.trim().replace(/\s+/g, ' '),
-          phone: form.phone.trim().replace(/\s/g, ''),
+          phone: form.phone.trim(),
         }),
       })
 
@@ -126,11 +131,12 @@ function RSVP() {
             <input
               aria-invalid={Boolean(errors.phone)}
               autoComplete="tel"
-              inputMode="tel"
-              maxLength="12"
+              inputMode="numeric"
+              maxLength="10"
               name="phone"
               onChange={handleChange}
-              placeholder="07X XXX XXXX"
+              pattern="0[0-9]{9}"
+              placeholder="0782984305"
               required
               type="tel"
               value={form.phone}
@@ -151,18 +157,33 @@ function RSVP() {
               />
               {errors.guests && <span className="field-error">{errors.guests}</span>}
             </label>
-            <label>
-              Attending
-              <select
+            <label className="attendance-field">
+              Will you attend?
+              <div
                 aria-invalid={Boolean(errors.attending)}
-                name="attending"
-                onChange={handleChange}
-                value={form.attending}
+                aria-label="Will you attend?"
+                className="attendance-options"
+                role="radiogroup"
               >
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-                <option value="maybe">Maybe</option>
-              </select>
+                <button
+                  aria-checked={form.attending === 'yes'}
+                  className={form.attending === 'yes' ? 'is-selected' : ''}
+                  onClick={() => handleAttendanceChange('yes')}
+                  role="radio"
+                  type="button"
+                >
+                  Joyfully accept
+                </button>
+                <button
+                  aria-checked={form.attending === 'no'}
+                  className={form.attending === 'no' ? 'is-selected' : ''}
+                  onClick={() => handleAttendanceChange('no')}
+                  role="radio"
+                  type="button"
+                >
+                  Regretfully decline
+                </button>
+              </div>
               {errors.attending && <span className="field-error">{errors.attending}</span>}
             </label>
           </div>

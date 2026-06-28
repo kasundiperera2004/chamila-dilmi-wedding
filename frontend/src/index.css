@@ -126,11 +126,12 @@ a {
 .hero-content h1 {
   color: var(--brown);
   font-family: "Great Vibes", "Cormorant Garamond", Georgia, serif;
-  font-size: clamp(4.4rem, 22vw, 6.3rem);
+  font-size: clamp(2.75rem, 12vw, 4.8rem);
   font-weight: 400;
   line-height: 0.8;
   margin: 6px auto 18px;
-  max-width: 360px;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .hero-copy {
@@ -424,6 +425,45 @@ p {
   border-color: #d87c64;
 }
 
+.attendance-field {
+  align-content: start;
+}
+
+.attendance-options {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+
+.attendance-options button {
+  background: rgba(255, 249, 234, 0.98);
+  border: 1px solid rgba(244, 217, 143, 0.52);
+  color: var(--brown);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 900;
+  min-height: 46px;
+  padding: 12px;
+  transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease;
+}
+
+.attendance-options button.is-selected {
+  background: linear-gradient(135deg, var(--gold), #a87420);
+  border-color: var(--gold-light);
+  color: #fff9ea;
+  box-shadow: 0 10px 22px rgba(47, 29, 19, 0.16);
+}
+
+.attendance-options button:focus-visible {
+  border-color: var(--gold-light);
+  box-shadow: 0 0 0 4px rgba(244, 217, 143, 0.2);
+  outline: 0;
+}
+
+.attendance-options[aria-invalid="true"] button {
+  border-color: #d87c64;
+}
+
 .rsvp-form button {
   cursor: pointer;
   width: 100%;
@@ -686,7 +726,7 @@ p {
   }
 
   .hero-content h1 {
-    font-size: 4rem;
+    font-size: 2.55rem;
   }
 
   .section {

@@ -245,14 +245,14 @@ const normalizeRsvp = (body) => {
   const guests = Number(body.guests || 1)
   const attending = String(body.attending || '').trim()
   const message = String(body.message || '').trim()
-  const validAttendance = ['yes', 'no', 'maybe']
+  const validAttendance = ['yes', 'no']
 
   if (name.length < 2 || name.length > 80) {
     return { error: 'Please enter a valid full name.' }
   }
 
-  if (!/^0\d{9}$/.test(phone.replace(/\s/g, ''))) {
-    return { error: 'Please enter a valid Sri Lankan phone number.' }
+  if (!/^0\d{9}$/.test(phone)) {
+    return { error: 'Please enter a 10-digit phone number.' }
   }
 
   if (!Number.isInteger(guests) || guests < 1 || guests > 10) {
