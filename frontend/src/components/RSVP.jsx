@@ -136,7 +136,12 @@ function RSVP() {
             Kindly let the family know if you can attend the wedding day.
           </p>
         </div>
-        <form className="rsvp-form reveal-on-scroll" noValidate onSubmit={handleSubmit}>
+        <form
+          className="rsvp-form reveal-on-scroll"
+          noValidate
+          onInvalid={(event) => event.preventDefault()}
+          onSubmit={handleSubmit}
+        >
           <label>
             Full Name
             <input
@@ -161,8 +166,7 @@ function RSVP() {
               name="phone"
               onChange={handleChange}
               placeholder="072 271 2127"
-              required
-              type="tel"
+              type="text"
               value={form.phone}
             />
             {errors.phone && <span className="field-error">{errors.phone}</span>}
