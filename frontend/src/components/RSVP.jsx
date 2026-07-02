@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 
 const initialForm = {
   name: '',
@@ -65,12 +65,6 @@ function RSVP() {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState({ type: 'idle', message: '' })
-  const phoneInputRef = useRef(null)
-
-  useEffect(() => {
-    phoneInputRef.current?.removeAttribute('pattern')
-    phoneInputRef.current?.setCustomValidity('')
-  }, [])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -167,12 +161,11 @@ function RSVP() {
               aria-invalid={Boolean(errors.phone)}
               autoComplete="tel"
               inputMode="tel"
-              ref={phoneInputRef}
               maxLength="16"
               name="phone"
               onChange={handleChange}
               placeholder="072 271 2127"
-              type="text"
+              type="tel"
               value={form.phone}
             />
             {errors.phone && <span className="field-error">{errors.phone}</span>}
