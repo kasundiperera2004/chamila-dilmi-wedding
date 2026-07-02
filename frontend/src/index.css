@@ -443,7 +443,9 @@ a {
   line-height: 1;
   margin: 0 auto 22px;
   max-width: 100%;
+  text-align: center;
   text-wrap: balance;
+  width: 100%;
   white-space: nowrap;
 }
 
@@ -1459,7 +1461,7 @@ p {
   }
 
   .hero-content h1 {
-    font-size: 3.15rem;
+    font-size: 2.95rem;
   }
 
   .floral-corner {
@@ -1525,7 +1527,7 @@ p {
   }
 
   .hero-content h1 {
-    font-size: 2.75rem;
+    font-size: 2.55rem;
   }
 
   .section {
