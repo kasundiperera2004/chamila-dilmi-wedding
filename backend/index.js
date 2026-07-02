@@ -14,8 +14,8 @@ if (existsSync(envPath) && process.loadEnvFile) {
 }
 
 const distDir = path.join(rootDir, 'dist')
-const port = Number(process.env.PORT || 5174)
-const host = process.env.HOST || '127.0.0.1'
+const PORT = Number(process.env.PORT || 5174)
+const host = '0.0.0.0'
 const adminPasscode = process.env.ADMIN_PASSCODE || 'chamila-dilmi'
 const googleSheetId = process.env.GOOGLE_SHEET_ID
 const googleSheetName = process.env.GOOGLE_SHEET_NAME || 'RSVPs'
@@ -453,13 +453,13 @@ const server = createServer(async (request, response) => {
 
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use. Stop the existing API server or set PORT to another value.`)
+    console.error(`Port ${PORT} is already in use. Stop the existing API server or set PORT to another value.`)
     process.exit(1)
   }
 
   throw error
 })
 
-server.listen(port, host, () => {
-  console.log(`Wedding invitation API running at http://${host}:${port}`)
+server.listen(PORT, host, () => {
+  console.log(`Wedding invitation API running on port ${PORT}`)
 })
