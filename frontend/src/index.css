@@ -444,6 +444,7 @@ a {
   margin: 0 auto 22px;
   max-width: 100%;
   text-wrap: balance;
+  white-space: nowrap;
 }
 
 .hero-content h1 + .thin-gold-divider {
@@ -1458,8 +1459,7 @@ p {
   }
 
   .hero-content h1 {
-    font-size: 3.8rem;
-    white-space: normal;
+    font-size: 3.15rem;
   }
 
   .floral-corner {
@@ -1525,7 +1525,7 @@ p {
   }
 
   .hero-content h1 {
-    font-size: 3rem;
+    font-size: 2.75rem;
   }
 
   .section {
