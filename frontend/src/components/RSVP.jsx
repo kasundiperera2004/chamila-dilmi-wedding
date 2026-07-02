@@ -117,9 +117,10 @@ function RSVP() {
         message: 'Thank you. Your RSVP has been received.',
       })
     } catch (error) {
+      console.error(error)
       setStatus({
         type: 'error',
-        message: error.message || 'Please try again, or contact Ashan directly.',
+        message: 'We could not send your RSVP right now. Please try again, or contact Ashan directly.',
       })
     }
   }
