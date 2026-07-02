@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../lib/api'
 
 const initialForm = {
   name: '',
@@ -95,7 +96,7 @@ function RSVP() {
     setStatus({ type: 'loading', message: 'Sending your RSVP...' })
 
     try {
-      const response = await fetch('/api/rsvp', {
+      const response = await fetch(apiUrl('/api/rsvp'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

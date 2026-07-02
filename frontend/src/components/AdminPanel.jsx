@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { apiUrl } from '../lib/api'
 
 const savedPasscodeKey = 'wedding-admin-passcode'
 
@@ -44,7 +45,7 @@ function AdminPanel() {
     setStatus({ type: 'loading', message: 'Loading RSVPs...' })
 
     try {
-      const response = await fetch('/api/rsvps', {
+      const response = await fetch(apiUrl('/api/rsvps'), {
         headers: {
           'x-admin-passcode': adminCode,
         },
@@ -107,7 +108,7 @@ function AdminPanel() {
     setStatus({ type: 'loading', message: 'Deleting RSVP...' })
 
     try {
-      const response = await fetch('/api/rsvps', {
+      const response = await fetch(apiUrl('/api/rsvps'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
