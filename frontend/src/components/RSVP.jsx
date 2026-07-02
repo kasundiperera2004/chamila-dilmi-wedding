@@ -103,10 +103,12 @@ function RSVP() {
 
   return (
     <section className="section rsvp-section" id="rsvp">
+      <span className="section-sparkle rsvp-sparkle" aria-hidden="true" />
       <div className="section-inner">
         <div className="section-heading centered">
           <p className="eyebrow">RSVP</p>
           <h2>Will you celebrate with us?</h2>
+          <span className="thin-gold-divider" aria-hidden="true" />
           <p className="lead">
             Kindly let the family know if you can attend the wedding day.
           </p>
@@ -172,7 +174,8 @@ function RSVP() {
                   role="radio"
                   type="button"
                 >
-                  Joyfully accept
+                  <span aria-hidden="true">✓</span>
+                  Joyfully Accept
                 </button>
                 <button
                   aria-checked={form.attending === 'no'}
@@ -181,7 +184,8 @@ function RSVP() {
                   role="radio"
                   type="button"
                 >
-                  Regretfully decline
+                  <span aria-hidden="true">×</span>
+                  Regretfully Decline
                 </button>
               </div>
               {errors.attending && <span className="field-error">{errors.attending}</span>}
@@ -202,7 +206,7 @@ function RSVP() {
               {errors.message || `${form.message.length}/300 characters`}
             </span>
           </label>
-          <button disabled={status.type === 'loading'} type="submit">
+          <button className="submit-rsvp-button" disabled={status.type === 'loading'} type="submit">
             {status.type === 'loading' ? 'Sending...' : 'Send RSVP'}
           </button>
           {status.message && (

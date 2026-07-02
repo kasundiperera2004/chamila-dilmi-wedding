@@ -24,12 +24,13 @@ const googlePrivateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n')
 const googleScope = 'https://www.googleapis.com/auth/spreadsheets'
 let cachedGoogleToken = null
 let sheetReady = false
+let rsvpSheetId = null
 
 const sendJson = (response, statusCode, data) => {
   response.writeHead(statusCode, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-admin-passcode',
   })
   response.end(JSON.stringify(data))
@@ -166,14 +167,16 @@ const ensureSheetReady = async () => {
   }
 
   const spreadsheetUrl = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${googleSheetId}`)
-  spreadsheetUrl.searchParams.set('fields', 'sheets.properties.title')
+  spreadsheetUrl.searchParams.set('fields', 'sheets.properties(sheetId,title)')
   const spreadsheet = await googleRequest(spreadsheetUrl)
-  const sheetExists = (spreadsheet.sheets || []).some(
+  const existingSheet = (spreadsheet.sheets || []).find(
     (sheet) => sheet.properties?.title === googleSheetName,
   )
 
-  if (!sheetExists) {
-    await googleRequest(
+  if (existingSheet) {
+    rsvpSheetId = existingSheet.properties.sheetId
+  } else {
+    const createdSheet = await googleRequest(
       `https://sheets.googleapis.com/v4/spreadsheets/${googleSheetId}:batchUpdate`,
       {
         method: 'POST',
@@ -190,6 +193,7 @@ const ensureSheetReady = async () => {
         },
       },
     )
+    rsvpSheetId = createdSheet.replies?.[0]?.addSheet?.properties?.sheetId
   }
 
   await sheetsRequest('A1:F1', {
@@ -227,16 +231,47 @@ const readRsvpsFromSheet = async () => {
   const result = await sheetsRequest('A2:F')
 
   return (result.values || [])
-    .map(([createdAt, name, phone, guests, attending, message]) => ({
+    .map(([createdAt, name, phone, guests, attending, message], index) => ({
       createdAt,
       name,
       phone,
       guests: Number(guests || 1),
       attending,
       message: message || '',
+      rowNumber: index + 2,
     }))
     .filter((rsvp) => rsvp.name && rsvp.phone)
     .reverse()
+}
+
+const deleteRsvpFromSheet = async (rowNumber) => {
+  await ensureSheetReady()
+
+  if (!Number.isInteger(rowNumber) || rowNumber < 2) {
+    throw new Error('Invalid RSVP row.')
+  }
+
+  if (!Number.isInteger(rsvpSheetId)) {
+    throw new Error('Unable to locate the RSVP sheet.')
+  }
+
+  await googleRequest(`https://sheets.googleapis.com/v4/spreadsheets/${googleSheetId}:batchUpdate`, {
+    method: 'POST',
+    body: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: rsvpSheetId,
+              dimension: 'ROWS',
+              startIndex: rowNumber - 1,
+              endIndex: rowNumber,
+            },
+          },
+        },
+      ],
+    },
+  })
 }
 
 const normalizeRsvp = (body) => {
@@ -318,6 +353,26 @@ const handleAdminRsvps = async (request, response) => {
   sendJson(response, 200, { rsvps, totals })
 }
 
+const handleDeleteRsvp = async (request, response) => {
+  const passcode = request.headers['x-admin-passcode']
+
+  if (passcode !== adminPasscode) {
+    sendJson(response, 401, { message: 'Invalid admin passcode.' })
+    return
+  }
+
+  const body = await parseBody(request)
+  const rowNumber = Number(body.rowNumber)
+
+  if (!Number.isInteger(rowNumber) || rowNumber < 2) {
+    sendJson(response, 400, { message: 'Invalid RSVP row.' })
+    return
+  }
+
+  await deleteRsvpFromSheet(rowNumber)
+  sendJson(response, 200, { message: 'RSVP deleted.' })
+}
+
 const contentTypes = {
   '.css': 'text/css',
   '.html': 'text/html',
@@ -382,6 +437,11 @@ const server = createServer(async (request, response) => {
 
     if (requestUrl.pathname === '/api/rsvps' && request.method === 'GET') {
       await handleAdminRsvps(request, response)
+      return
+    }
+
+    if (requestUrl.pathname === '/api/rsvps' && request.method === 'DELETE') {
+      await handleDeleteRsvp(request, response)
       return
     }
 

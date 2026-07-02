@@ -30,9 +30,12 @@ function Countdown() {
 
   return (
     <section className="section countdown-section" id="countdown">
+      <span className="section-sparkle section-sparkle-left" aria-hidden="true" />
+      <span className="section-sparkle section-sparkle-right" aria-hidden="true" />
       <div className="section-inner centered">
         <p className="eyebrow">Counting Down</p>
         <h2>Until our wedding day</h2>
+        <span className="thin-gold-divider" aria-hidden="true" />
         <div className="countdown-grid" aria-label="Countdown to wedding day">
           {Object.entries(timeLeft).map(([label, value]) => (
             <div className="countdown-item" key={label}>

@@ -23,6 +23,7 @@ function AdminPanel() {
   const [passcode, setPasscode] = useState(() => sessionStorage.getItem(savedPasscodeKey) || '')
   const [inputPasscode, setInputPasscode] = useState('')
   const [data, setData] = useState({ rsvps: [], totals: { guests: 0, yes: 0, no: 0, maybe: 0 } })
+  const [deletingRowNumber, setDeletingRowNumber] = useState(null)
   const [status, setStatus] = useState({ type: 'idle', message: '' })
 
   const hasAccess = Boolean(passcode)
@@ -97,6 +98,51 @@ function AdminPanel() {
     setData({ rsvps: [], totals: { guests: 0, yes: 0, no: 0, maybe: 0 } })
   }
 
+  const handleDelete = async (rsvp) => {
+    if (!window.confirm(`Delete RSVP from ${rsvp.name}? This cannot be undone.`)) {
+      return
+    }
+
+    setDeletingRowNumber(rsvp.rowNumber)
+    setStatus({ type: 'loading', message: 'Deleting RSVP...' })
+
+    try {
+      const response = await fetch('/api/rsvps', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-passcode': passcode,
+        },
+        body: JSON.stringify({ rowNumber: rsvp.rowNumber }),
+      })
+
+      if (!response.ok) {
+        let message = response.status === 401 ? 'Invalid passcode.' : 'Unable to delete RSVP.'
+
+        try {
+          const result = await response.json()
+          message = result.message || message
+        } catch {
+          message = response.statusText || message
+        }
+
+        throw new Error(message)
+      }
+
+      setStatus({ type: 'success', message: 'RSVP deleted.' })
+      await loadRsvps()
+    } catch (error) {
+      if (error.message === 'Invalid admin passcode.' || error.message === 'Invalid passcode.') {
+        sessionStorage.removeItem(savedPasscodeKey)
+        setPasscode('')
+      }
+
+      setStatus({ type: 'error', message: error.message })
+    } finally {
+      setDeletingRowNumber(null)
+    }
+  }
+
   return (
     <main className="admin-page">
       <section className="admin-shell">
@@ -166,6 +212,7 @@ function AdminPanel() {
                       <th>Attending</th>
                       <th>Message</th>
                       <th>Submitted</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -179,6 +226,16 @@ function AdminPanel() {
                         </td>
                         <td data-label="Message">{rsvp.message || '-'}</td>
                         <td data-label="Submitted">{formatDate(rsvp.createdAt)}</td>
+                        <td data-label="Action">
+                          <button
+                            className="delete-rsvp-button"
+                            disabled={deletingRowNumber === rsvp.rowNumber}
+                            onClick={() => handleDelete(rsvp)}
+                            type="button"
+                          >
+                            {deletingRowNumber === rsvp.rowNumber ? 'Deleting...' : 'Delete'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

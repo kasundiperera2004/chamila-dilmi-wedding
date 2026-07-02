@@ -18,6 +18,15 @@ function App() {
   return (
     <main className="site-frame">
       <div className="invitation-shell">
+        <div className="ambient-particles" aria-hidden="true">
+          {Array.from({ length: 22 }, (_, index) => (
+            <span key={index} />
+          ))}
+        </div>
+        <span className="floral-corner floral-corner-top-left" aria-hidden="true" />
+        <span className="floral-corner floral-corner-top-right" aria-hidden="true" />
+        <span className="floral-corner floral-corner-bottom-left" aria-hidden="true" />
+        <span className="floral-corner floral-corner-bottom-right" aria-hidden="true" />
         <Hero />
         <Countdown />
         <Events />

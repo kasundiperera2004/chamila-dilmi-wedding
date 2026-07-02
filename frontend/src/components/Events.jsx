@@ -3,10 +3,12 @@ import { weddingData } from '../data/weddingData'
 function Events() {
   return (
     <section className="section events-section" id="venue">
+      <span className="ornament-vine events-vine" aria-hidden="true" />
       <div className="section-inner">
         <div className="section-heading centered">
           <p className="eyebrow">Venue</p>
           <h2>{weddingData.venue.name}</h2>
+          <span className="thin-gold-divider" aria-hidden="true" />
           <p className="lead">{weddingData.venue.location}</p>
           <p>
             Join Chamila and Dilmi for a joyful wedding celebration surrounded by
