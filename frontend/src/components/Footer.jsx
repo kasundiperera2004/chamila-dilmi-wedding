@@ -17,7 +17,11 @@ function Footer() {
         <a className="contact-button" href={weddingData.contact.phoneHref}>
           Contact {weddingData.contact.name}
         </a>
-        <small>© 2026 Black Sky Squad. All rights reserved.</small>
+        <small>
+          <a className="footer-credit" href="https://blackskysquad.lk">
+            © 2026 Black Sky Squad. All rights reserved.
+          </a>
+        </small>
       </div>
     </footer>
   )
