@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const initialForm = {
   name: '',
@@ -65,6 +65,12 @@ function RSVP() {
   const [form, setForm] = useState(initialForm)
   const [errors, setErrors] = useState({})
   const [status, setStatus] = useState({ type: 'idle', message: '' })
+  const phoneInputRef = useRef(null)
+
+  useEffect(() => {
+    phoneInputRef.current?.removeAttribute('pattern')
+    phoneInputRef.current?.setCustomValidity('')
+  }, [])
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -151,7 +157,6 @@ function RSVP() {
               name="name"
               onChange={handleChange}
               placeholder="Your name"
-              required
               value={form.name}
             />
             {errors.name && <span className="field-error">{errors.name}</span>}
@@ -162,6 +167,7 @@ function RSVP() {
               aria-invalid={Boolean(errors.phone)}
               autoComplete="tel"
               inputMode="tel"
+              ref={phoneInputRef}
               maxLength="16"
               name="phone"
               onChange={handleChange}
@@ -232,7 +238,12 @@ function RSVP() {
               {errors.message || `${form.message.length}/300 characters`}
             </span>
           </label>
-          <button className="submit-rsvp-button" disabled={status.type === 'loading'} type="submit">
+          <button
+            className="submit-rsvp-button"
+            disabled={status.type === 'loading'}
+            formNoValidate
+            type="submit"
+          >
             {status.type === 'loading' ? 'Sending...' : 'Send RSVP'}
           </button>
           {status.message && (
