@@ -8,10 +8,32 @@ const initialForm = {
   message: '',
 }
 
+const normalizeSriLankanPhone = (value) => {
+  const phone = String(value || '').trim().replace(/\s+/g, '')
+
+  if (/^0\d{9}$/.test(phone)) {
+    return phone
+  }
+
+  if (/^\+94\d{9}$/.test(phone)) {
+    return `0${phone.slice(3)}`
+  }
+
+  if (/^94\d{9}$/.test(phone)) {
+    return `0${phone.slice(2)}`
+  }
+
+  if (/^\d{9}$/.test(phone)) {
+    return `0${phone}`
+  }
+
+  return ''
+}
+
 const validateForm = (form) => {
   const errors = {}
   const name = form.name.trim().replace(/\s+/g, ' ')
-  const phone = form.phone.trim()
+  const phone = normalizeSriLankanPhone(form.phone)
   const guests = Number(form.guests)
 
   if (name.length < 2) {
@@ -20,8 +42,8 @@ const validateForm = (form) => {
     errors.name = 'Name must be 80 characters or fewer.'
   }
 
-  if (!/^0\d{9}$/.test(phone)) {
-    errors.phone = 'Enter exactly 10 numbers, like 0782984305.'
+  if (!phone) {
+    errors.phone = 'Please enter a valid Sri Lankan phone number.'
   }
 
   if (!Number.isInteger(guests) || guests < 1 || guests > 10) {
@@ -46,7 +68,7 @@ function RSVP() {
 
   const handleChange = (event) => {
     const { name, value } = event.target
-    const nextValue = name === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value
+    const nextValue = name === 'phone' ? value.slice(0, 16) : value
     setForm((current) => ({ ...current, [name]: nextValue }))
     setErrors((current) => ({ ...current, [name]: '' }))
   }
@@ -59,6 +81,7 @@ function RSVP() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     const nextErrors = validateForm(form)
+    const phone = normalizeSriLankanPhone(form.phone)
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -78,7 +101,7 @@ function RSVP() {
         body: JSON.stringify({
           ...form,
           name: form.name.trim().replace(/\s+/g, ' '),
-          phone: form.phone.trim(),
+          phone,
         }),
       })
 
@@ -133,12 +156,11 @@ function RSVP() {
             <input
               aria-invalid={Boolean(errors.phone)}
               autoComplete="tel"
-              inputMode="numeric"
-              maxLength="10"
+              inputMode="tel"
+              maxLength="16"
               name="phone"
               onChange={handleChange}
-              pattern="0[0-9]{9}"
-              placeholder="0782984305"
+              placeholder="072 271 2127"
               required
               type="tel"
               value={form.phone}

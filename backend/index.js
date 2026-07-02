@@ -274,9 +274,31 @@ const deleteRsvpFromSheet = async (rowNumber) => {
   })
 }
 
+const normalizeSriLankanPhone = (value) => {
+  const phone = String(value || '').trim().replace(/\s+/g, '')
+
+  if (/^0\d{9}$/.test(phone)) {
+    return phone
+  }
+
+  if (/^\+94\d{9}$/.test(phone)) {
+    return `0${phone.slice(3)}`
+  }
+
+  if (/^94\d{9}$/.test(phone)) {
+    return `0${phone.slice(2)}`
+  }
+
+  if (/^\d{9}$/.test(phone)) {
+    return `0${phone}`
+  }
+
+  return ''
+}
+
 const normalizeRsvp = (body) => {
   const name = String(body.name || '').trim().replace(/\s+/g, ' ')
-  const phone = String(body.phone || '').trim()
+  const phone = normalizeSriLankanPhone(body.phone)
   const guests = Number(body.guests || 1)
   const attending = String(body.attending || '').trim()
   const message = String(body.message || '').trim()
@@ -286,8 +308,8 @@ const normalizeRsvp = (body) => {
     return { error: 'Please enter a valid full name.' }
   }
 
-  if (!/^0\d{9}$/.test(phone)) {
-    return { error: 'Please enter a 10-digit phone number.' }
+  if (!phone) {
+    return { error: 'Please enter a valid Sri Lankan phone number.' }
   }
 
   if (!Number.isInteger(guests) || guests < 1 || guests > 10) {
