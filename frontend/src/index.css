@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   color: #3a2517;
   background: #efe2c5;
   font-synthesis: none;
@@ -22,10 +23,12 @@
 }
 
 html {
+  color-scheme: light;
   scroll-behavior: smooth;
 }
 
 body {
+  color-scheme: light;
   margin: 0;
   min-width: 320px;
   background:
@@ -321,6 +324,7 @@ a {
     linear-gradient(145deg, #fffdf6 0%, var(--ivory) 38%, #f2dfb5 100%);
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
   min-height: 100vh;
   overflow: visible;
@@ -400,6 +404,7 @@ a {
   margin: 0 auto;
   max-width: 620px;
   position: relative;
+  width: 100%;
   z-index: 2;
 }
 
@@ -438,7 +443,7 @@ a {
   line-height: 1;
   margin: 0 auto 22px;
   max-width: 100%;
-  white-space: nowrap;
+  text-wrap: balance;
 }
 
 .hero-content h1 + .thin-gold-divider {
@@ -1448,6 +1453,15 @@ p {
 }
 
 @media (max-width: 700px) {
+  .hero-content {
+    max-width: 100%;
+  }
+
+  .hero-content h1 {
+    font-size: 3.8rem;
+    white-space: normal;
+  }
+
   .floral-corner {
     height: 78px;
     opacity: 0.42;
